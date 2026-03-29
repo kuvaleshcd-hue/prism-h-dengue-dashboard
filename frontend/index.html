@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRISM-H Dengue Surveillance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #050a0e;
+    --surface: #0d1821;
+    --surface2: #121f2e;
+    --border: #1a3048;
+    --accent: #ff4444;
+    --accent2: #ff8800;
+    --accent3: #00d4ff;
+    --green: #00ff88;
+    --text: #e8f4f8;
+    --muted: #5a7a8a;
+    --mild: #00cc66;
+    --severe: #ff6600;
+    --moderate: #ffaa00;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; min-height:100vh; overflow-x:hidden; }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,.015) 2px,rgba(0,212,255,.015) 4px);
+    pointer-events:none; z-index:9999;
+  }
+
+  /* HEADER */
+  .header {
+    background:var(--surface); border-bottom:1px solid var(--border);
+    padding:0 2rem; display:flex; align-items:center; justify-content:space-between;
+    height:64px; position:sticky; top:0; z-index:100;
+  }
+  .logo { display:flex; align-items:center; gap:.75rem; }
+  .logo-icon {
+    width:36px; height:36px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border-radius:8px; display:flex; align-items:center; justify-content:center;
+    font-size:1.1rem; animation:pulse-glow 2s infinite;
+  }
+  @keyframes pulse-glow {
+    0%,100%{box-shadow:0 0 20px rgba(255,68,68,.4)}
+    50%{box-shadow:0 0 35px rgba(255,68,68,.7)}
+  }
+  .logo-text { font-size:1.1rem; font-weight:800; letter-spacing:.1em; }
+  .logo-sub { font-family:'Space Mono',monospace; font-size:.6rem; color:var(--accent3); letter-spacing:.2em; text-transform:uppercase; }
+  .header-right { display:flex; align-items:center; gap:1rem; }
+  .live-badge {
+    display:flex; align-items:center; gap:.4rem;
+    background:rgba(0,255,136,.08); border:1px solid rgba(0,255,136,.3);
+    padding:.3rem .75rem; border-radius:999px;
+    font-family:'Space Mono',monospace; font-size:.7rem; color:var(--green);
+  }
+  .live-dot { width:6px; height:6px; background:var(--green); border-radius:50%; animation:blink 1.2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+  .nav-tabs { display:flex; background:var(--bg); border-radius:8px; padding:3px; border:1px solid var(--border); }
+  .nav-tab {
+    padding:.4rem 1rem; border-radius:6px; font-size:.8rem; font-weight:600;
+    cursor:pointer; color:var(--muted); transition:all .2s;
+    border:none; background:transparent; font-family:'Syne',sans-serif;
+  }
+  .nav-tab.active { background:var(--surface2); color:var(--accent3); border:1px solid var(--border); }
+
+  /* ALERT BANNER */
+  .alert-banner {
+    background:linear-gradient(90deg,rgba(255,34,0,.15),rgba(255,68,68,.05),transparent);
+    border-bottom:1px solid rgba(255,68,68,.3); padding:.5rem 2rem;
+    font-family:'Space Mono',monospace; font-size:.72rem; color:var(--accent);
+    display:none; align-items:center; gap:.75rem;
+  }
+  .alert-banner.show { display:flex; }
+
+  /* MAIN */
+  .main { padding:1.5rem 2rem; }
+
+  /* STATS */
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:1.5rem; }
+  .stat-card {
+    background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:1.25rem 1.5rem; position:relative; overflow:hidden;
+  }
+  .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+  .stat-card:nth-child(1)::before { background:var(--accent3); }
+  .stat-card:nth-child(2)::before { background:var(--accent); }
+  .stat-card:nth-child(3)::before { background:var(--accent2); }
+  .stat-card:nth-child(4)::before { background:var(--green); }
+  .stat-label { font-family:'Space Mono',monospace; font-size:.65rem; color:var(--muted); letter-spacing:.15em; text-transform:uppercase; margin-bottom:.5rem; }
+  .stat-value { font-size:2.2rem; font-weight:800; line-height:1; margin-bottom:.25rem; }
+  .stat-delta { font-family:'Space Mono',monospace; font-size:.65rem; color:var(--muted); }
+
+  /* GRID */
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+  .grid-3 { display:grid; grid-template-columns:2fr 1fr; gap:1rem; margin-bottom:1rem; }
+
+  /* CARD */
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .card-header { padding:1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .card-title { font-size:.8rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  .card-body { padding:1.25rem; }
+
+  /* MAP */
+  #map { height:320px; background:#0a1520; }
+
+  /* CHART */
+  .chart-wrap { position:relative; height:200px; }
+
+  /* FORM */
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem 1.5rem; }
+  .form-group { display:flex; flex-direction:column; gap:.4rem; }
+  .form-label { font-family:'Space Mono',monospace; font-size:.65rem; color:var(--muted); letter-spacing:.15em; text-transform:uppercase; }
+  .form-input, .form-select {
+    background:var(--bg); border:1px solid var(--border); border-radius:8px;
+    padding:.6rem .9rem; color:var(--text); font-family:'Syne',sans-serif;
+    font-size:.85rem; outline:none; transition:border-color .2s; width:100%;
+  }
+  .form-input:focus, .form-select:focus { border-color:var(--accent3); box-shadow:0 0 0 3px rgba(0,212,255,.08); }
+  .form-select option { background:var(--surface); }
+
+  /* BUTTONS */
+  .btn { padding:.7rem 1.5rem; border-radius:8px; font-family:'Syne',sans-serif; font-size:.85rem; font-weight:700; cursor:pointer; border:none; transition:all .2s; letter-spacing:.05em; }
+  .btn-primary { background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; box-shadow:0 4px 15px rgba(255,68,68,.3); }
+  .btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(255,68,68,.5); }
+  .btn-outline { background:transparent; border:1px solid var(--border); color:var(--text); }
+  .btn-outline:hover { border-color:var(--accent3); color:var(--accent3); }
+  .btn-sm { padding:.35rem .8rem; font-size:.72rem; }
+
+  /* BADGE */
+  .badge { display:inline-flex; align-items:center; padding:.2rem .6rem; border-radius:999px; font-family:'Space Mono',monospace; font-size:.6rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+  .badge-mild     { background:rgba(0,204,102,.15); color:var(--mild);     border:1px solid rgba(0,204,102,.3); }
+  .badge-moderate { background:rgba(255,170,0,.15);  color:var(--moderate); border:1px solid rgba(255,170,0,.3); }
+  .badge-severe   { background:rgba(255,102,0,.15);  color:var(--severe);   border:1px solid rgba(255,102,0,.3); }
+
+  /* TABLE */
+  .table-wrap { overflow-x:auto; }
+  .full-table-wrap { max-height:420px; overflow-y:auto; }
+  table { width:100%; border-collapse:collapse; }
+  th { font-family:'Space Mono',monospace; font-size:.6rem; color:var(--muted); letter-spacing:.15em; text-transform:uppercase; padding:.6rem 1rem; text-align:left; border-bottom:1px solid var(--border); }
+  td { padding:.7rem 1rem; font-size:.82rem; border-bottom:1px solid rgba(26,48,72,.5); }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:rgba(255,255,255,.02); }
+
+  /* HOTSPOT */
+  .hotspot-item { display:flex; align-items:center; justify-content:space-between; padding:.7rem 0; border-bottom:1px solid rgba(26,48,72,.5); }
+  .hotspot-item:last-child { border-bottom:none; }
+  .hotspot-bar-wrap { flex:1; margin:0 1rem; height:4px; background:var(--border); border-radius:999px; overflow:hidden; }
+  .hotspot-bar { height:100%; border-radius:999px; background:linear-gradient(90deg,var(--accent3),var(--accent)); }
+
+  /* ALERTS */
+  .alert-card { border-radius:10px; padding:.9rem 1.1rem; margin-bottom:.6rem; display:flex; gap:.75rem; align-items:flex-start; font-size:.78rem; border:1px solid; }
+  .alert-card.critical { background:rgba(255,34,0,.08); border-color:rgba(255,34,0,.3); color:#ff8888; }
+  .alert-card.warn     { background:rgba(255,204,0,.08); border-color:rgba(255,204,0,.3); color:#ffdd66; }
+  .alert-card.ok       { background:rgba(0,255,136,.08); border-color:rgba(0,255,136,.3); color:#66ffaa; }
+
+  /* SECTION TABS */
+  .section-tab-row { display:flex; gap:.5rem; }
+  .section-tab { padding:.4rem 1rem; border-radius:6px; font-size:.75rem; font-weight:600; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--muted); font-family:'Syne',sans-serif; transition:all .2s; }
+  .section-tab.active { background:rgba(0,212,255,.1); border-color:var(--accent3); color:var(--accent3); }
+
+  /* UPLOAD */
+  .upload-zone { border:2px dashed var(--border); border-radius:10px; padding:2rem; text-align:center; cursor:pointer; transition:border-color .2s; margin-top:1rem; }
+  .upload-zone:hover { border-color:var(--accent3); }
+  .upload-zone input { display:none; }
+
+  /* FILTER */
+  .filter-bar { display:flex; gap:.75rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap; }
+  .filter-bar select, .filter-bar input { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:.45rem .8rem; color:var(--text); font-family:'Syne',sans-serif; font-size:.8rem; outline:none; }
+  .filter-bar select:focus, .filter-bar input:focus { border-color:var(--accent3); }
+
+  /* SPINNER */
+  .spinner { width:18px; height:18px; border:2px solid var(--border); border-top-color:var(--accent3); border-radius:50%; animation:spin .7s linear infinite; display:inline-block; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* TOAST */
+  .toast {
+    position:fixed; bottom:2rem; right:2rem;
+    background:var(--surface2); border:1px solid var(--green); border-radius:10px;
+    padding:.8rem 1.2rem; font-size:.82rem; color:var(--green);
+    display:flex; align-items:center; gap:.5rem;
+    transform:translateY(100px); opacity:0; transition:all .3s;
+    z-index:9999; font-family:'Space Mono',monospace; max-width:320px;
+  }
+  .toast.show { transform:translateY(0); opacity:1; }
+
+  /* VIEWS */
+  .view { display:none; }
+  .view.active { display:block; }
+
+  ::-webkit-scrollbar { width:5px; height:5px; }
+  ::-webkit-scrollbar-track { background:var(--bg); }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:999px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon">🦟</div>
+    <div>
+      <div class="logo-text">PRISM-H</div>
+      <div class="logo-sub">Dengue Surveillance System · Bengaluru</div>
+    </div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchView('dashboard')">Dashboard</button>
+    <button class="nav-tab" onclick="switchView('report')">Report Case</button>
+    <button class="nav-tab" onclick="switchView('records')">Records</button>
+    <button class="nav-tab" onclick="switchView('analytics')">Analytics</button>
+  </div>
+  <div class="header-right">
+    <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+    <div id="clock" style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);"></div>
+  </div>
+</header>
+
+<!-- ALERT BANNER -->
+<div class="alert-banner" id="alertBanner">
+  ⚠️ OUTBREAK ALERT — <span id="alertText"></span>
+</div>
+
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div class="view active" id="view-dashboard">
+  <div class="main">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Cases</div>
+        <div class="stat-value" id="statTotal" style="color:var(--accent3)">—</div>
+        <div class="stat-delta" id="statZonesSub">Loading...</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Severe Cases</div>
+        <div class="stat-value" id="statSevere" style="color:var(--accent)">—</div>
+        <div class="stat-delta" id="statSeverePct">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active Zones</div>
+        <div class="stat-value" id="statZones" style="color:var(--accent2)">—</div>
+        <div class="stat-delta">Affected areas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Today's Cases</div>
+        <div class="stat-value" id="statToday" style="color:var(--green)">—</div>
+        <div class="stat-delta" id="statTodayLabel">—</div>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📍 Hotspot Map</span>
+          <button class="btn btn-outline btn-sm" onclick="toggleHeatmap()">🌡 Heatmap</button>
+        </div>
+        <div id="map"></div>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="card-header"><span class="card-title">🔴 Top Hotspots</span></div>
+          <div class="card-body" id="hotspotList" style="padding-top:.5rem;"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">🚨 Alerts</span></div>
+          <div class="card-body" id="alertList" style="padding:.75rem;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">📈 Daily Trend</span>
+          <div class="section-tab-row">
+            <button class="section-tab active" onclick="setChartRange(7,this)">7D</button>
+            <button class="section-tab" onclick="setChartRange(14,this)">14D</button>
+            <button class="section-tab" onclick="setChartRange(30,this)">30D</button>
+          </div>
+        </div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">🧪 Severity Breakdown</span>
+          <span id="mlRisk" style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);"></span>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;gap:1.5rem;align-items:center;">
+            <div style="width:150px;height:150px;flex-shrink:0;"><canvas id="severityChart"></canvas></div>
+            <div id="severityLegend" style="flex:1;font-size:.8rem;line-height:2.2;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ REPORT CASE ═══════════════ -->
+<div class="view" id="view-report">
+  <div class="main">
+    <div style="max-width:680px;">
+      <div class="card">
+        <div class="card-header"><span class="card-title">🩺 Report New Dengue Case</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Patient ID / Code</label>
+              <input class="form-input" id="fPatientId" placeholder="e.g. PT-2024-001">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date Reported</label>
+              <input class="form-input" id="fDate" type="date">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Area / Zone</label>
+              <select class="form-select" id="fArea">
+                <option value="">Select area...</option>
+                <option>Rajajinagar</option><option>Koramangala</option><option>Hebbal</option>
+                <option>Whitefield</option><option>Indiranagar</option><option>Jayanagar</option>
+                <option>Marathahalli</option><option>Yelahanka</option><option>Banashankari</option>
+                <option>HSR Layout</option><option>Pandavapura</option><option>Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Severity</label>
+              <select class="form-select" id="fSeverity">
+                <option value="mild">Mild</option>
+                <option value="moderate">Moderate</option>
+                <option value="severe">Severe</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Age Group</label>
+              <select class="form-select" id="fAge">
+                <option>0-12 (Child)</option><option>13-25 (Youth)</option>
+                <option>26-45 (Adult)</option><option>46-60 (Middle-aged)</option><option>60+ (Senior)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Gender</label>
+              <select class="form-select" id="fGender">
+                <option>Male</option><option>Female</option><option>Other</option>
+              </select>
+            </div>
+            <div class="form-group" style="grid-column:1/-1;">
+              <label class="form-label">Notes (optional)</label>
+              <input class="form-input" id="fNotes" placeholder="Symptoms, hospital, remarks...">
+            </div>
+          </div>
+          <div style="margin-top:1.5rem;display:flex;gap:.75rem;">
+            <button class="btn btn-primary" id="submitBtn" onclick="addCase()">➕ Submit Case</button>
+            <button class="btn btn-outline" onclick="clearForm()">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-header"><span class="card-title">📁 Bulk Upload (CSV)</span></div>
+        <div class="card-body">
+          <div class="upload-zone" onclick="document.getElementById('csvInput').click()">
+            <input type="file" id="csvInput" accept=".csv" onchange="handleCSV(this)">
+            <div style="font-size:1.5rem;margin-bottom:.5rem;">📂</div>
+            <div style="font-size:.85rem;color:var(--muted);">Click to upload CSV file</div>
+            <div style="font-family:'Space Mono',monospace;font-size:.62rem;color:var(--border);margin-top:.4rem;">
+              Columns: date, area, severity, age_group, gender, notes
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-header"><span class="card-title">🌱 Load Sample Data</span></div>
+        <div class="card-body" style="display:flex;align-items:center;gap:1rem;">
+          <button class="btn btn-outline" onclick="seedData()">Seed 30 Days of Sample Data</button>
+          <span style="font-size:.75rem;color:var(--muted);">Useful for testing the dashboard</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ RECORDS ═══════════════ -->
+<div class="view" id="view-records">
+  <div class="main">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📋 Case Records</span>
+        <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+      <div class="card-body" style="padding-top:.75rem;">
+        <div class="filter-bar">
+          <select id="filterArea" onchange="loadTable()">
+            <option value="">All Areas</option>
+          </select>
+          <select id="filterSeverity" onchange="loadTable()">
+            <option value="">All Severity</option>
+            <option value="mild">Mild</option>
+            <option value="moderate">Moderate</option>
+            <option value="severe">Severe</option>
+          </select>
+          <input type="date" id="filterDateFrom" onchange="loadTable()" placeholder="From">
+          <input type="date" id="filterDateTo" onchange="loadTable()" placeholder="To">
+          <button class="btn btn-outline btn-sm" onclick="clearFilters()">Clear</button>
+        </div>
+        <div class="table-wrap full-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>Date</th><th>Patient ID</th><th>Area</th>
+                <th>Severity</th><th>Age Group</th><th>Gender</th><th>Notes</th><th>Del</th>
+              </tr>
+            </thead>
+            <tbody id="caseTableBody">
+              <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem;">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ ANALYTICS ═══════════════ -->
+<div class="view" id="view-analytics">
+  <div class="main">
+    <div class="grid-2" style="margin-bottom:1rem;">
+      <div class="card">
+        <div class="card-header"><span class="card-title">📊 Weekly Comparison</span></div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="weeklyChart"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">🗂 Area-wise Distribution</span></div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="areaChart"></canvas></div></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><span class="card-title">🤖 Outbreak Prediction (ML)</span></div>
+        <div class="card-body" id="mlPanel"><div style="color:var(--muted)">Loading...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">👥 Age Demographics</span></div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="ageChart"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">✓ <span id="toastMsg"></span></div>
+
+<script>
+const API = 'http://127.0.0.1:5001/api';
+const THRESHOLD = 5;
+
+const AREAS = {
+  'Rajajinagar':[13.002,77.555],'Koramangala':[12.934,77.624],'Hebbal':[13.035,77.597],
+  'Whitefield':[12.970,77.750],'Indiranagar':[12.978,77.641],'Jayanagar':[12.930,77.582],
+  'Marathahalli':[12.960,77.700],'Yelahanka':[13.101,77.596],'Banashankari':[12.924,77.553],
+  'HSR Layout':[12.912,77.640],'Pandavapura':[12.490,76.660],'Other':[12.971,77.594]
+};
+
+let map, markersLayer, heatLayer;
+let heatmapOn = false;
+let chartRange = 7;
+let trendChart, severityChart, weeklyChart, areaChart, ageChart;
+let allCases = [];
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  initMap();
+  setInterval(updateClock, 1000); updateClock();
+  document.getElementById('fDate').value = today();
+  loadAll();
+  setInterval(loadAll, 30000); // auto-refresh every 30s
+};
+
+function today() { return new Date().toISOString().split('T')[0]; }
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+}
+
+// ── API CALLS ─────────────────────────────────────────────────────────────────
+async function apiFetch(url, opts={}) {
+  const res = await fetch(API + url, {
+    headers: {'Content-Type':'application/json'},
+    ...opts
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function loadAll() {
+  try {
+    const [stats, cases] = await Promise.all([
+      apiFetch('/stats'),
+      apiFetch('/cases')
+    ]);
+    allCases = cases;
+    updateStats(stats);
+    updateMap(cases);
+    renderHotspots(stats.hotspots);
+    renderAlerts(cases);
+    renderTrendChart(stats.trend);
+    renderSeverityChart(cases);
+    populateAreaFilter(cases);
+    renderTable(cases);
+  } catch(e) {
+    showToast('⚠ Backend not reachable. Start Flask server!', true);
+  }
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+function updateStats(s) {
+  document.getElementById('statTotal').textContent  = s.total;
+  document.getElementById('statSevere').textContent = s.severe;
+  document.getElementById('statZones').textContent  = s.zones;
+  document.getElementById('statToday').textContent  = s.today;
+  document.getElementById('statSeverePct').textContent = s.total ? `${((s.severe/s.total)*100).toFixed(1)}% of total` : '—';
+  document.getElementById('statTodayLabel').textContent = s.today > 0 ? `${s.today} new report${s.today>1?'s':''}` : 'No new reports';
+  document.getElementById('statZonesSub').textContent = `${s.zones} zones affected`;
+
+  // Outbreak banner
+  const recent = allCases.filter(c => {
+    const d = new Date(c.date), cut = new Date(); cut.setDate(cut.getDate()-3);
+    return d >= cut;
+  }).length;
+  const banner = document.getElementById('alertBanner');
+  if (recent >= THRESHOLD) {
+    banner.classList.add('show');
+    document.getElementById('alertText').textContent = `${recent} cases in last 3 days — immediate action required`;
+  } else { banner.classList.remove('show'); }
+}
+
+// ── MAP ───────────────────────────────────────────────────────────────────────
+function initMap() {
+  map = L.map('map').setView([12.97, 77.59], 11);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution:'© OpenStreetMap © CARTO', subdomains:'abcd', maxZoom:19
+  }).addTo(map);
+  markersLayer = L.layerGroup().addTo(map);
+}
+
+function updateMap(cases) {
+  markersLayer.clearLayers();
+  if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
+  const areaCounts = {};
+  const heatData = [];
+
+  cases.forEach(c => {
+    areaCounts[c.area] = (areaCounts[c.area]||0) + 1;
+    if (AREAS[c.area]) {
+      const [lat,lng] = AREAS[c.area];
+      const j = ()=>(Math.random()-.5)*.02;
+      heatData.push([lat+j(), lng+j(), c.severity==='severe' ? 1 : 0.4]);
+    }
+  });
+
+  if (heatmapOn) {
+    heatLayer = L.heatLayer(heatData, {radius:30, blur:25, gradient:{0.2:'#00d4ff',0.5:'#ff8800',1:'#ff2200'}}).addTo(map);
+  } else {
+    Object.entries(areaCounts).forEach(([area, count]) => {
+      if (!AREAS[area]) return;
+      const [lat,lng] = AREAS[area];
+      const col = count>10 ? '#ff2200' : count>5 ? '#ff8800' : '#00d4ff';
+      L.circleMarker([lat,lng], {radius:Math.max(10,Math.min(30,count*3)), color:col, fillColor:col, fillOpacity:.35, weight:2})
+       .bindPopup(`<b style='color:#e8f4f8'>${area}</b><br><span style='color:#aaa'>${count} case${count>1?'s':''}</span>`)
+       .addTo(markersLayer);
+    });
+  }
+}
+
+function toggleHeatmap() { heatmapOn = !heatmapOn; updateMap(allCases); }
+
+// ── CHARTS ────────────────────────────────────────────────────────────────────
+const baseOpts = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{grid:{color:'rgba(26,48,72,.5)',drawBorder:false}, ticks:{color:'#5a7a8a', font:{family:'Space Mono',size:9}}},
+    y:{grid:{color:'rgba(26,48,72,.5)',drawBorder:false}, ticks:{color:'#5a7a8a', font:{family:'Space Mono',size:9}, stepSize:1}}
+  }
+};
+
+function renderTrendChart(trend) {
+  // Build last N days
+  const labels=[], data=[];
+  for (let i = chartRange-1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate()-i);
+    const ds = d.toISOString().split('T')[0];
+    labels.push(d.toLocaleDateString('en-IN',{month:'short',day:'numeric'}));
+    const found = trend.find(t => t.date === ds);
+    data.push(found ? found.count : 0);
+  }
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type:'line',
+    data:{labels, datasets:[{data, borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,.08)', fill:true, tension:.4, pointBackgroundColor:'#00d4ff', pointRadius:3, borderWidth:2}]},
+    options:{...baseOpts}
+  });
+}
+
+function renderSeverityChart(cases) {
+  const mild     = cases.filter(c=>c.severity==='mild').length;
+  const moderate = cases.filter(c=>c.severity==='moderate').length;
+  const severe   = cases.filter(c=>c.severity==='severe').length;
+  const total    = cases.length || 1;
+  if (severityChart) severityChart.destroy();
+  severityChart = new Chart(document.getElementById('severityChart'), {
+    type:'doughnut',
+    data:{labels:['Mild','Moderate','Severe'], datasets:[{data:[mild,moderate,severe], backgroundColor:['#00cc66','#ffaa00','#ff4444'], borderWidth:0}]},
+    options:{responsive:true, maintainAspectRatio:false, cutout:'70%', plugins:{legend:{display:false}}}
+  });
+  document.getElementById('severityLegend').innerHTML = `
+    <div><span style="color:var(--mild)">● Mild</span> — ${mild} (${((mild/total)*100).toFixed(0)}%)</div>
+    <div><span style="color:var(--moderate)">● Moderate</span> — ${moderate} (${((moderate/total)*100).toFixed(0)}%)</div>
+    <div><span style="color:var(--accent)">● Severe</span> — ${severe} (${((severe/total)*100).toFixed(0)}%)</div>
+  `;
+  const risk = severe>10?'HIGH':severe>5?'MEDIUM':'LOW';
+  const rc   = risk==='HIGH'?'var(--accent)':risk==='MEDIUM'?'var(--accent2)':'var(--green)';
+  document.getElementById('mlRisk').innerHTML = `<span style="color:${rc}">Risk: ${risk}</span>`;
+}
+
+function setChartRange(days, el) {
+  chartRange = days;
+  document.querySelectorAll('.section-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  apiFetch('/stats').then(s => renderTrendChart(s.trend));
+}
+
+async function renderAnalyticsCharts() {
+  const cases = allCases;
+
+  // Weekly
+  const weeks = ['4 wks ago','3 wks ago','2 wks ago','Last week','This week'];
+  const wdata = weeks.map((_,i) => {
+    const start=new Date(); start.setDate(start.getDate()-(4-i)*7-7);
+    const end=new Date();   end.setDate(end.getDate()-(4-i)*7);
+    return cases.filter(c=>{ const d=new Date(c.date); return d>=start&&d<end; }).length;
+  });
+  if (weeklyChart) weeklyChart.destroy();
+  weeklyChart = new Chart(document.getElementById('weeklyChart'), {
+    type:'bar',
+    data:{labels:weeks, datasets:[{data:wdata, backgroundColor:wdata.map((_,i)=>i===4?'#ff4444':'rgba(0,212,255,.4)'), borderRadius:6}]},
+    options:{...baseOpts}
+  });
+
+  // Area
+  const areaCounts={};
+  cases.forEach(c=>{areaCounts[c.area]=(areaCounts[c.area]||0)+1;});
+  const sorted=Object.entries(areaCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if (areaChart) areaChart.destroy();
+  areaChart = new Chart(document.getElementById('areaChart'), {
+    type:'bar',
+    data:{labels:sorted.map(e=>e[0]), datasets:[{data:sorted.map(e=>e[1]), backgroundColor:'rgba(255,136,0,.5)', borderColor:'#ff8800', borderWidth:1, borderRadius:6}]},
+    options:{...baseOpts, indexAxis:'y'}
+  });
+
+  // Age
+  const ageCounts={};
+  cases.forEach(c=>{ageCounts[c.age_group]=(ageCounts[c.age_group]||0)+1;});
+  if (ageChart) ageChart.destroy();
+  ageChart = new Chart(document.getElementById('ageChart'), {
+    type:'bar',
+    data:{labels:Object.keys(ageCounts), datasets:[{data:Object.values(ageCounts), backgroundColor:'rgba(0,255,136,.4)', borderColor:'#00ff88', borderWidth:1, borderRadius:6}]},
+    options:{...baseOpts}
+  });
+
+  // ML Panel
+  const last30 = [];
+  for (let i=29;i>=0;i--) {
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const ds=d.toISOString().split('T')[0];
+    last30.push(cases.filter(c=>c.date===ds).length);
+  }
+  const avg7  = last30.slice(-7).reduce((a,b)=>a+b,0)/7;
+  const avg3  = last30.slice(-3).reduce((a,b)=>a+b,0)/3;
+  const trend = avg3 - avg7;
+  const pred  = Math.max(0, Math.round(avg3*1.1 + trend*.5));
+  const risk  = avg3>=8||trend>3 ? 'HIGH' : avg3>=4||trend>1 ? 'MEDIUM' : 'LOW';
+  const rc    = risk==='HIGH'?'var(--accent)':risk==='MEDIUM'?'var(--accent2)':'var(--green)';
+  const note  = risk==='HIGH' ? 'Cases are rising rapidly. Recommend immediate intervention.'
+               : risk==='MEDIUM' ? 'Moderate spread detected. Enhanced surveillance recommended.'
+               : 'Situation under control. Continue routine monitoring.';
+  document.getElementById('mlPanel').innerHTML = `
+    <div style="display:flex;gap:2rem;align-items:center;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);margin-bottom:.3rem;">OUTBREAK RISK</div>
+        <div style="font-size:2.5rem;font-weight:800;color:${rc};line-height:1;">${risk}</div>
+      </div>
+      <div>
+        <div style="font-family:'Space Mono',monospace;font-size:.65rem;color:var(--muted);margin-bottom:.75rem;">PREDICTED — NEXT 7 DAYS</div>
+        <div style="font-size:1.8rem;font-weight:700;color:var(--accent3);">${pred} <span style="font-size:.85rem;color:var(--muted)">est. cases</span></div>
+        <div style="font-size:.75rem;color:var(--muted);margin-top:.5rem;">
+          7-day avg: <b style='color:var(--text)'>${avg7.toFixed(1)}</b> &nbsp;·&nbsp;
+          3-day avg: <b style='color:var(--text)'>${avg3.toFixed(1)}</b> &nbsp;·&nbsp;
+          Trend: <b style='color:${trend>0?"var(--accent)":"var(--green)"}'>${trend>0?'+':''}${trend.toFixed(1)}/day</b>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:1rem;background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.15);border-radius:8px;padding:.8rem;font-size:.78rem;">
+      🤖 <b>Model:</b> ${note}
+    </div>
+    <div style="font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);margin-top:.75rem;">Linear extrapolation · 30-day rolling window · Not for clinical use.</div>
+  `;
+}
+
+// ── HOTSPOTS ──────────────────────────────────────────────────────────────────
+function renderHotspots(hotspots) {
+  const max = hotspots[0]?.count || 1;
+  document.getElementById('hotspotList').innerHTML = hotspots.length
+    ? hotspots.map(h => `
+        <div class="hotspot-item">
+          <span style="font-size:.8rem;min-width:100px">${h.area}</span>
+          <div class="hotspot-bar-wrap"><div class="hotspot-bar" style="width:${(h.count/max)*100}%"></div></div>
+          <span style="font-family:'Space Mono',monospace;font-size:.7rem;color:var(--accent3);min-width:24px;text-align:right">${h.count}</span>
+        </div>`).join('')
+    : '<div style="color:var(--muted);font-size:.8rem;">No data yet.</div>';
+}
+
+// ── ALERTS ────────────────────────────────────────────────────────────────────
+function renderAlerts(cases) {
+  const areaCounts={};
+  const cutoff=new Date(); cutoff.setDate(cutoff.getDate()-3);
+  const recent=cases.filter(c=>new Date(c.date)>=cutoff);
+  recent.forEach(c=>{areaCounts[c.area]=(areaCounts[c.area]||0)+1;});
+  const alerts=[];
+  Object.entries(areaCounts).forEach(([a,n])=>{
+    if (n>=THRESHOLD) alerts.push({type:'critical', msg:`⚠ ${a}: ${n} cases in 3 days — OUTBREAK risk`});
+    else if (n>=3)    alerts.push({type:'warn',     msg:`⚡ ${a}: ${n} cases — Monitor closely`});
+  });
+  const sevRec=recent.filter(c=>c.severity==='severe').length;
+  if (sevRec>2) alerts.push({type:'critical', msg:`🔴 ${sevRec} severe cases in 3 days`});
+  if (!alerts.length) alerts.push({type:'ok', msg:'✅ No active outbreak alerts. Situation normal.'});
+  document.getElementById('alertList').innerHTML = alerts.map(a=>`<div class="alert-card ${a.type}">${a.msg}</div>`).join('');
+}
+
+// ── TABLE ─────────────────────────────────────────────────────────────────────
+function populateAreaFilter(cases) {
+  const areas=[...new Set(cases.map(c=>c.area))].sort();
+  const sel=document.getElementById('filterArea');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">All Areas</option>'+areas.map(a=>`<option value="${a}" ${a===cur?'selected':''}>${a}</option>`).join('');
+}
+
+async function loadTable() {
+  const area=document.getElementById('filterArea').value;
+  const sev=document.getElementById('filterSeverity').value;
+  const from=document.getElementById('filterDateFrom').value;
+  const to=document.getElementById('filterDateTo').value;
+  let url='/cases?';
+  if (area) url+=`area=${encodeURIComponent(area)}&`;
+  if (sev) url+=`severity=${sev}&`;
+  if (from) url+=`from=${from}&`;
+  if (to) url+=`to=${to}&`;
+  const cases=await apiFetch(url);
+  renderTable(cases);
+}
+
+function renderTable(cases) {
+  if (!cases) return;
+  const body=document.getElementById('caseTableBody');
+  body.innerHTML = cases.length
+    ? cases.map((c,i)=>`
+        <tr>
+          <td style="color:var(--muted);font-family:'Space Mono',monospace;font-size:.7rem;">${i+1}</td>
+          <td style="font-family:'Space Mono',monospace;font-size:.75rem;">${c.date}</td>
+          <td style="font-family:'Space Mono',monospace;font-size:.7rem;color:var(--accent3);">${c.patient_id}</td>
+          <td>${c.area}</td>
+          <td><span class="badge badge-${c.severity}">${c.severity}</span></td>
+          <td style="font-size:.75rem;color:var(--muted);">${c.age_group||'—'}</td>
+          <td style="font-size:.75rem;color:var(--muted);">${c.gender||'—'}</td>
+          <td style="font-size:.75rem;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;">${c.notes||'—'}</td>
+          <td><button onclick="deleteCase(${c.id})" style="background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.3);color:var(--accent);border-radius:4px;padding:.2rem .5rem;cursor:pointer;font-size:.7rem;">✕</button></td>
+        </tr>`).join('')
+    : `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem;">No records found.</td></tr>`;
+}
+
+function clearFilters() {
+  ['filterArea','filterSeverity','filterDateFrom','filterDateTo'].forEach(id=>{document.getElementById(id).value='';});
+  renderTable(allCases);
+}
+
+// ── CRUD ──────────────────────────────────────────────────────────────────────
+async function addCase() {
+  const area=document.getElementById('fArea').value;
+  const date=document.getElementById('fDate').value;
+  const severity=document.getElementById('fSeverity').value;
+  if (!area||!date) { showToast('⚠ Area and Date required', true); return; }
+  const btn=document.getElementById('submitBtn');
+  btn.innerHTML='<span class="spinner"></span> Saving...'; btn.disabled=true;
+  try {
+    await apiFetch('/cases', {
+      method:'POST',
+      body: JSON.stringify({
+        patient_id: document.getElementById('fPatientId').value || `PT-${Date.now()}`,
+        date, area, severity,
+        age_group: document.getElementById('fAge').value,
+        gender:    document.getElementById('fGender').value,
+        notes:     document.getElementById('fNotes').value
+      })
+    });
+    showToast(`✓ Case added: ${area} — ${severity}`);
+    clearForm(); loadAll();
+  } catch(e) { showToast('Error saving case', true); }
+  btn.innerHTML='➕ Submit Case'; btn.disabled=false;
+}
+
+async function deleteCase(id) {
+  await apiFetch(`/cases/${id}`, {method:'DELETE'});
+  showToast('Case deleted');
+  loadAll();
+}
+
+async function seedData() {
+  await apiFetch('/seed', {method:'POST'});
+  showToast('✓ Sample data loaded!');
+  loadAll();
+}
+
+function clearForm() {
+  ['fPatientId','fNotes'].forEach(id=>{document.getElementById(id).value='';});
+  document.getElementById('fArea').value='';
+  document.getElementById('fDate').value=today();
+  document.getElementById('fSeverity').value='mild';
+}
+
+// ── CSV ───────────────────────────────────────────────────────────────────────
+function handleCSV(input) {
+  const file=input.files[0]; if (!file) return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const lines=e.target.result.split('\n').filter(Boolean);
+    const payload=lines.slice(1).map((line,i)=>{
+      const p=line.split(',').map(s=>s.trim().replace(/"/g,''));
+      return {date:p[0]||today(), area:p[1]||'Other', severity:p[2]||'mild', age_group:p[3]||'', gender:p[4]||'', notes:p[5]||'', patient_id:`PT-CSV-${i}`};
+    }).filter(r=>r.date&&r.area);
+    const res=await apiFetch('/cases/bulk',{method:'POST',body:JSON.stringify(payload)});
+    showToast(`✓ ${res.message}`);
+    loadAll();
+  };
+  reader.readAsText(file);
+}
+
+function exportCSV() {
+  const header='id,date,area,severity,age_group,gender,notes,patient_id';
+  const rows=allCases.map(c=>`${c.id},${c.date},${c.area},${c.severity},${c.age_group||''},${c.gender||''},${c.notes||''},${c.patient_id}`);
+  const blob=new Blob([header+'\n'+rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`prism-h-${today()}.csv`; a.click();
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function switchView(name) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(t=>{
+    if (t.textContent.toLowerCase().replace(' ','').includes(name.replace('-',''))) t.classList.add('active');
+  });
+  if (name==='analytics') setTimeout(renderAnalyticsCharts, 100);
+  if (name==='dashboard') setTimeout(()=>map.invalidateSize(), 100);
+  if (name==='records') loadTable();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function showToast(msg, warn=false) {
+  const t=document.getElementById('toast'), m=document.getElementById('toastMsg');
+  m.textContent=msg;
+  t.style.borderColor=warn?'var(--accent2)':'var(--green)';
+  t.style.color=warn?'var(--accent2)':'var(--green)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>
