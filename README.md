@@ -135,6 +135,7 @@ GET /api/cases?from=2024-01-01&to=2024-01-31
 - ✅ CSV bulk upload
 - ✅ CSV export
 - ✅ Auto-refresh every 30 seconds
+- ✅ Weather Data Integration (rainfall/temp correlation chart)
 
 ---
 

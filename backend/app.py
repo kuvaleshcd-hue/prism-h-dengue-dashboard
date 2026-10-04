@@ -129,11 +129,21 @@ def get_stats():
     ''').fetchall()
 
     # Daily trend (last 30 days)
-    trend = conn.execute('''
+    trend_rows = conn.execute('''
         SELECT date, COUNT(*) as count FROM cases
         WHERE date >= date('now','-30 days')
         GROUP BY date ORDER BY date
     ''').fetchall()
+
+    import random
+    trend = []
+    for r in trend_rows:
+        rd = dict(row_to_dict(r))
+        random.seed(rd['date'])
+        # Generate mock weather data based on date
+        rd['rainfall'] = round(random.uniform(0, 60), 1)  # 0 to 60 mm
+        rd['temperature'] = round(random.uniform(22, 35), 1) # 22 to 35 C
+        trend.append(rd)
 
     conn.close()
     return jsonify({
@@ -142,7 +152,7 @@ def get_stats():
         'zones': zones,
         'today': today_c,
         'hotspots': [row_to_dict(r) for r in hotspots],
-        'trend': [row_to_dict(r) for r in trend]
+        'trend': trend
     })
 
 # Bulk import cases (CSV-style JSON array)

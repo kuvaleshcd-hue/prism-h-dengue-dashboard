@@ -448,6 +448,10 @@
         <div class="card-body"><div class="chart-wrap"><canvas id="ageChart"></canvas></div></div>
       </div>
     </div>
+    <div class="card" style="margin-top:1rem;">
+      <div class="card-header"><span class="card-title">🌦 Weather vs Dengue Cases (Last 30 Days)</span></div>
+      <div class="card-body"><div class="chart-wrap" style="height:300px;"><canvas id="weatherChart"></canvas></div></div>
+    </div>
   </div>
 </div>
 
@@ -468,7 +472,7 @@ const AREAS = {
 let map, markersLayer, heatLayer;
 let heatmapOn = false;
 let chartRange = 7;
-let trendChart, severityChart, weeklyChart, areaChart, ageChart;
+let trendChart, severityChart, weeklyChart, areaChart, ageChart, weatherChart;
 let allCases = [];
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
@@ -507,6 +511,7 @@ async function loadAll() {
     updateMap(cases);
     renderHotspots(stats.hotspots);
     renderAlerts(cases);
+    window.trendData = stats.trend;
     renderTrendChart(stats.trend);
     renderSeverityChart(cases);
     populateAreaFilter(cases);
@@ -709,6 +714,65 @@ async function renderAnalyticsCharts() {
     </div>
     <div style="font-family:'Space Mono',monospace;font-size:.6rem;color:var(--muted);margin-top:.75rem;">Linear extrapolation · 30-day rolling window · Not for clinical use.</div>
   `;
+
+  // Weather Chart
+  if (weatherChart) weatherChart.destroy();
+  if (window.trendData && window.trendData.length > 0) {
+    const dates = window.trendData.map(t => t.date.substring(5)); // Show MM-DD
+    const rain = window.trendData.map(t => t.rainfall);
+    const temp = window.trendData.map(t => t.temperature);
+    const casesCount = window.trendData.map(t => t.count);
+
+    weatherChart = new Chart(document.getElementById('weatherChart'), {
+      type: 'bar',
+      data: {
+        labels: dates,
+        datasets: [
+          {
+            label: 'Rainfall (mm)',
+            data: rain,
+            backgroundColor: 'rgba(0, 212, 255, 0.4)',
+            yAxisID: 'yRain'
+          },
+          {
+            label: 'Temperature (°C)',
+            type: 'line',
+            data: temp,
+            borderColor: '#ff8800',
+            backgroundColor: '#ff8800',
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 0,
+            yAxisID: 'yTemp'
+          },
+          {
+            label: 'Cases',
+            type: 'line',
+            data: casesCount,
+            borderColor: '#ff4444',
+            backgroundColor: '#ff4444',
+            borderWidth: 2,
+            tension: 0.4,
+            pointRadius: 2,
+            yAxisID: 'yCases'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, labels: { color: '#e8f4f8', font: { family: 'Space Mono', size: 10 } } }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(26,48,72,.5)', drawBorder: false }, ticks: { color: '#5a7a8a', font: { family: 'Space Mono', size: 9 } } },
+          yRain: { type: 'linear', position: 'left', ticks: { color: 'rgba(0,212,255,1)', font: { family: 'Space Mono', size: 9 } }, title: { display: true, text: 'Rain (mm)', color: '#5a7a8a', font: { family: 'Space Mono', size: 9 } }, grid: { color: 'rgba(26,48,72,.5)', drawBorder: false } },
+          yTemp: { type: 'linear', position: 'right', ticks: { color: '#ff8800', font: { family: 'Space Mono', size: 9 } }, title: { display: true, text: 'Temp (°C)', color: '#5a7a8a', font: { family: 'Space Mono', size: 9 } }, grid: { drawOnChartArea: false } },
+          yCases: { type: 'linear', position: 'right', ticks: { color: '#ff4444', font: { family: 'Space Mono', size: 9 }, stepSize: 1 }, title: { display: true, text: 'Cases', color: '#5a7a8a', font: { family: 'Space Mono', size: 9 } }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+  }
 }
 
 // ── HOTSPOTS ──────────────────────────────────────────────────────────────────
