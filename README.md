@@ -88,7 +88,8 @@ to populate the dashboard with demo Bengaluru data.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/cases` | Get all cases (supports filters) |
+| GET | `/api/cases` | Get all cases (supports filters & search) |
+| GET | `/api/cases/search` | Quick search across records by ID/name/area/notes |
 | POST | `/api/cases` | Add a single case |
 | PUT | `/api/cases/<id>` | Update/edit an existing case |
 | DELETE | `/api/cases/<id>` | Delete a case |
@@ -102,6 +103,8 @@ to populate the dashboard with demo Bengaluru data.
 GET /api/cases?area=Koramangala
 GET /api/cases?severity=severe
 GET /api/cases?from=2024-01-01&to=2024-01-31
+GET /api/cases?q=PT-2024
+GET /api/cases/search?q=Whitefield
 ```
 
 ---
@@ -127,6 +130,7 @@ GET /api/cases?from=2024-01-01&to=2024-01-31
 - ✅ Interactive Leaflet map with hotspot markers
 - ✅ Toggle heatmap visualization
 - ✅ Filter records by area, severity, date range
+- ✅ Patient Search (Quick search across records by name/ID/area/notes with live preview, keyboard shortcut `/` or `Ctrl+K`, and records table filter)
 - ✅ Daily trend chart (7/14/30 day)
 - ✅ Severity breakdown doughnut chart
 - ✅ Weekly comparison bar chart

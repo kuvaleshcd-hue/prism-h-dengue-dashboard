@@ -85,6 +85,7 @@ def get_cases():
     severity  = request.args.get('severity')
     date_from = request.args.get('from')
     date_to   = request.args.get('to')
+    q         = request.args.get('q', '').strip()
 
     query = 'SELECT * FROM cases WHERE 1=1'
     params = []
@@ -97,11 +98,41 @@ def get_cases():
         query += ' AND date >= ?'; params.append(date_from)
     if date_to:
         query += ' AND date <= ?'; params.append(date_to)
+    if q:
+        query += ''' AND (
+            patient_id LIKE ? OR
+            area LIKE ? OR
+            notes LIKE ? OR
+            severity LIKE ? OR
+            age_group LIKE ? OR
+            gender LIKE ?
+        )'''
+        q_param = f'%{q}%'
+        params.extend([q_param, q_param, q_param, q_param, q_param, q_param])
 
     query += ' ORDER BY date DESC'
 
     conn = get_db()
     rows = conn.execute(query, params).fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
+# Quick patient search across all records by name/ID/area
+@app.route('/api/cases/search', methods=['GET'])
+def search_cases():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify([])
+
+    limit = request.args.get('limit', 20, type=int)
+    conn = get_db()
+    q_param = f'%{q}%'
+    rows = conn.execute('''
+        SELECT * FROM cases
+        WHERE patient_id LIKE ? OR area LIKE ? OR notes LIKE ? OR severity LIKE ? OR age_group LIKE ? OR gender LIKE ?
+        ORDER BY date DESC
+        LIMIT ?
+    ''', (q_param, q_param, q_param, q_param, q_param, q_param, limit)).fetchall()
     conn.close()
     return jsonify([row_to_dict(r) for r in rows])
 

@@ -232,6 +232,224 @@
   }
   .btn-edit:hover { background:rgba(0,212,255,.2); }
 
+  /* GLOBAL QUICK SEARCH */
+  .search-container {
+    position: relative;
+    width: 290px;
+    margin: 0 1rem;
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 .65rem;
+    height: 36px;
+    gap: .5rem;
+    transition: all .2s ease;
+  }
+  .search-box:focus-within {
+    border-color: var(--accent3);
+    box-shadow: 0 0 14px rgba(0,212,255,.2);
+    background: var(--surface2);
+  }
+  .search-icon { font-size: .8rem; opacity: .7; }
+  .search-box input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: .78rem;
+    width: 100%;
+  }
+  .search-box input::placeholder {
+    color: var(--muted);
+    font-size: .72rem;
+  }
+  .search-shortcut {
+    font-family: 'Space Mono', monospace;
+    font-size: .65rem;
+    background: rgba(255,255,255,.06);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: .1rem .35rem;
+    color: var(--muted);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+  .search-clear-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: .75rem;
+    padding: 0 .2rem;
+    line-height: 1;
+    transition: color .2s;
+  }
+  .search-clear-btn:hover { color: var(--text); }
+  .search-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    width: 420px;
+    background: rgba(10, 21, 32, .98);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.75), 0 0 35px rgba(0,212,255,.1);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    animation: fadeIn .18s ease;
+  }
+  .search-dropdown.show { display: flex; }
+  .search-dropdown-header {
+    padding: .65rem 1rem;
+    background: rgba(15, 32, 48, .75);
+    border-bottom: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+    font-size: .65rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    letter-spacing: .08em;
+  }
+  .search-dropdown-list {
+    max-height: 320px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .search-result-item {
+    padding: .75rem 1rem;
+    border-bottom: 1px solid rgba(26, 48, 72, .5);
+    cursor: pointer;
+    transition: background .15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+  }
+  .search-result-item:last-child { border-bottom: none; }
+  .search-result-item:hover { background: rgba(0, 212, 255, .08); }
+  .search-result-row1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .search-patient-id {
+    font-family: 'Space Mono', monospace;
+    font-size: .78rem;
+    font-weight: 700;
+    color: var(--accent3);
+  }
+  .search-result-row2 {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .72rem;
+    color: var(--muted);
+  }
+  .search-result-notes {
+    font-size: .7rem;
+    color: #8aa4b8;
+    background: rgba(255, 255, 255, .03);
+    padding: .2rem .4rem;
+    border-radius: 4px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .search-dropdown-footer {
+    padding: .7rem 1rem;
+    background: rgba(15, 32, 48, .8);
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: .74rem;
+    color: var(--accent3);
+    cursor: pointer;
+    font-weight: 600;
+    transition: background .2s;
+  }
+  .search-dropdown-footer:hover { background: rgba(0, 212, 255, .15); }
+  .search-empty {
+    padding: 1.6rem 1rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: .78rem;
+  }
+
+  /* RECORDS TABLE SEARCH & FILTER */
+  .table-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0 .75rem;
+    min-width: 250px;
+    height: 34px;
+    transition: border-color .2s;
+  }
+  .table-search-wrap:focus-within { border-color: var(--accent3); }
+  .table-search-wrap input {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: .8rem;
+    outline: none;
+    width: 100%;
+  }
+  .table-search-clear {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: .75rem;
+    padding: 0 .2rem;
+    line-height: 1;
+    transition: color .2s;
+  }
+  .table-search-clear:hover { color: var(--text); }
+  .filter-count-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: .68rem;
+    color: var(--accent3);
+    background: rgba(0, 212, 255, .08);
+    border: 1px solid rgba(0, 212, 255, .25);
+    padding: .25rem .6rem;
+    border-radius: 6px;
+    display: none;
+    align-items: center;
+    gap: .4rem;
+  }
+  .filter-count-badge.show { display: inline-flex; }
+
+  /* ROW HIGHLIGHT ANIMATION */
+  @keyframes highlightGlow {
+    0% { background: rgba(0, 212, 255, .35); }
+    100% { background: transparent; }
+  }
+  .highlight-pulse { animation: highlightGlow 2.5s ease-out; }
+
+  @media (max-width: 1100px) {
+    .search-container { width: 210px; margin: 0 .5rem; }
+    .search-dropdown { width: 340px; }
+  }
+  @media (max-width: 900px) {
+    .search-container { display: none; }
+  }
+
   ::-webkit-scrollbar { width:5px; height:5px; }
   ::-webkit-scrollbar-track { background:var(--bg); }
   ::-webkit-scrollbar-thumb { background:var(--border); border-radius:999px; }
@@ -253,6 +471,15 @@
     <button class="nav-tab" onclick="switchView('report')">Report Case</button>
     <button class="nav-tab" onclick="switchView('records')">Records</button>
     <button class="nav-tab" onclick="switchView('analytics')">Analytics</button>
+  </div>
+  <div class="search-container" id="globalSearchContainer">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="globalSearchInput" placeholder="Quick patient search (ID, area...)" autocomplete="off" oninput="handleGlobalSearch()" onfocus="handleGlobalSearch()">
+      <span class="search-shortcut" title="Press / or Ctrl+K to search">/</span>
+      <button class="search-clear-btn" id="globalSearchClear" onclick="clearGlobalSearch()" title="Clear" style="display:none;">✕</button>
+    </div>
+    <div class="search-dropdown" id="searchDropdown"></div>
   </div>
   <div class="header-right">
     <button class="btn btn-outline btn-sm" onclick="downloadReport()" style="display:flex;align-items:center;gap:.4rem;">📄 PDF Report</button>
@@ -429,11 +656,19 @@
   <div class="main">
     <div class="card">
       <div class="card-header">
-        <span class="card-title">📋 Case Records</span>
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <span class="card-title">📋 Case Records</span>
+          <div id="filterResultCount" class="filter-count-badge"></div>
+        </div>
         <button class="btn btn-outline btn-sm" onclick="exportCSV()">⬇ Export CSV</button>
       </div>
       <div class="card-body" style="padding-top:.75rem;">
         <div class="filter-bar">
+          <div class="table-search-wrap">
+            <span style="font-size:.8rem;opacity:.7;">🔍</span>
+            <input type="text" id="filterSearch" placeholder="Search patient ID, area, notes..." oninput="handleTableSearch()" autocomplete="off">
+            <button class="table-search-clear" id="filterSearchClear" onclick="clearTableSearch()" style="display:none;" title="Clear search">✕</button>
+          </div>
           <select id="filterArea" onchange="loadTable()">
             <option value="">All Areas</option>
           </select>
@@ -617,7 +852,14 @@ async function loadAll() {
     renderTrendChart(stats.trend);
     renderSeverityChart(cases);
     populateAreaFilter(cases);
-    renderTable(cases);
+    // Respect active search or filters on reload
+    const hasActiveFilters = ['filterArea','filterSeverity','filterDateFrom','filterDateTo','filterSearch']
+      .some(id => { const el = document.getElementById(id); return el && el.value; });
+    if (hasActiveFilters) {
+      loadTable();
+    } else {
+      renderTable(cases);
+    }
   } catch(e) {
     showToast('⚠ Backend not reachable. Start Flask server!', true);
   }
@@ -907,7 +1149,17 @@ function renderAlerts(cases) {
   document.getElementById('alertList').innerHTML = alerts.map(a=>`<div class="alert-card ${a.type}">${a.msg}</div>`).join('');
 }
 
-// ── TABLE ─────────────────────────────────────────────────────────────────────
+// ── TABLE & SEARCH ────────────────────────────────────────────────────────────
+function escapeHTML(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function populateAreaFilter(cases) {
   const areas=[...new Set(cases.map(c=>c.area))].sort();
   const sel=document.getElementById('filterArea');
@@ -915,42 +1167,232 @@ function populateAreaFilter(cases) {
   sel.innerHTML='<option value="">All Areas</option>'+areas.map(a=>`<option value="${a}" ${a===cur?'selected':''}>${a}</option>`).join('');
 }
 
-async function loadTable() {
-  const area=document.getElementById('filterArea').value;
-  const sev=document.getElementById('filterSeverity').value;
-  const from=document.getElementById('filterDateFrom').value;
-  const to=document.getElementById('filterDateTo').value;
-  let url='/cases?';
-  if (area) url+=`area=${encodeURIComponent(area)}&`;
-  if (sev) url+=`severity=${sev}&`;
-  if (from) url+=`from=${from}&`;
-  if (to) url+=`to=${to}&`;
-  const cases=await apiFetch(url);
-  renderTable(cases);
+let tableSearchTimer = null;
+function handleTableSearch() {
+  const input = document.getElementById('filterSearch');
+  const clearBtn = document.getElementById('filterSearchClear');
+  if (clearBtn) clearBtn.style.display = input.value ? 'inline-block' : 'none';
+  clearTimeout(tableSearchTimer);
+  tableSearchTimer = setTimeout(() => {
+    loadTable();
+  }, 180);
 }
 
-function renderTable(cases) {
+function clearTableSearch() {
+  const input = document.getElementById('filterSearch');
+  if (input) input.value = '';
+  const clearBtn = document.getElementById('filterSearchClear');
+  if (clearBtn) clearBtn.style.display = 'none';
+  loadTable();
+}
+
+async function loadTable(highlightId = null) {
+  const area = document.getElementById('filterArea') ? document.getElementById('filterArea').value : '';
+  const sev = document.getElementById('filterSeverity') ? document.getElementById('filterSeverity').value : '';
+  const from = document.getElementById('filterDateFrom') ? document.getElementById('filterDateFrom').value : '';
+  const to = document.getElementById('filterDateTo') ? document.getElementById('filterDateTo').value : '';
+  const q = document.getElementById('filterSearch') ? document.getElementById('filterSearch').value.trim() : '';
+
+  let url = '/cases?';
+  if (area) url += `area=${encodeURIComponent(area)}&`;
+  if (sev) url += `severity=${encodeURIComponent(sev)}&`;
+  if (from) url += `from=${encodeURIComponent(from)}&`;
+  if (to) url += `to=${encodeURIComponent(to)}&`;
+  if (q) url += `q=${encodeURIComponent(q)}&`;
+
+  try {
+    const cases = await apiFetch(url);
+    renderTable(cases, highlightId);
+
+    // Update count badge
+    const badge = document.getElementById('filterResultCount');
+    if (badge) {
+      if (area || sev || from || to || q) {
+        badge.innerHTML = `<span>Filtered: <b>${cases.length}</b> / ${allCases.length}</span>`;
+        badge.classList.add('show');
+      } else {
+        badge.classList.remove('show');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load table:', err);
+  }
+}
+
+function renderTable(cases, highlightId = null) {
   if (!cases) return;
-  const body=document.getElementById('caseTableBody');
-  body.innerHTML = cases.length
-    ? cases.map((c,i)=>`
-        <tr>
+  const targetId = highlightId || window.pendingHighlightId;
+  window.pendingHighlightId = null;
+
+  const body = document.getElementById('caseTableBody');
+  if (!cases.length) {
+    body.innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2.5rem 1rem;">
+      <div style="font-size:1.4rem;margin-bottom:.4rem;opacity:.5;">🔍</div>
+      <div style="font-weight:600;color:var(--text);margin-bottom:.2rem;">No matching patient records found</div>
+      <div style="font-size:.75rem;color:var(--muted);">Try adjusting your search query or clear active filters</div>
+    </td></tr>`;
+    return;
+  }
+
+  body.innerHTML = cases.map((c, i) => {
+    const isHighlighted = targetId && c.id === targetId;
+    const highlightAttr = isHighlighted ? 'class="highlight-pulse"' : '';
+    return `
+        <tr id="case-row-${c.id}" ${highlightAttr}>
           <td style="color:var(--muted);font-family:'Space Mono',monospace;font-size:.7rem;">${i+1}</td>
           <td style="font-family:'Space Mono',monospace;font-size:.75rem;">${c.date}</td>
-          <td style="font-family:'Space Mono',monospace;font-size:.7rem;color:var(--accent3);">${c.patient_id}</td>
-          <td>${c.area}</td>
+          <td style="font-family:'Space Mono',monospace;font-size:.7rem;color:var(--accent3);font-weight:700;">${escapeHTML(c.patient_id)}</td>
+          <td>${escapeHTML(c.area)}</td>
           <td><span class="badge badge-${c.severity}">${c.severity}</span></td>
-          <td style="font-size:.75rem;color:var(--muted);">${c.age_group||'—'}</td>
-          <td style="font-size:.75rem;color:var(--muted);">${c.gender||'—'}</td>
-          <td style="font-size:.75rem;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;">${c.notes||'—'}</td>
-          <td style="display:flex;gap:.3rem;"><button class="btn-edit" onclick="openEditModal(${c.id})">✏️</button><button onclick="deleteCase(${c.id})" style="background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.3);color:var(--accent);border-radius:4px;padding:.2rem .5rem;cursor:pointer;font-size:.7rem;">✕</button></td>
-        </tr>`).join('')
-    : `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem;">No records found.</td></tr>`;
+          <td style="font-size:.75rem;color:var(--muted);">${escapeHTML(c.age_group||'—')}</td>
+          <td style="font-size:.75rem;color:var(--muted);">${escapeHTML(c.gender||'—')}</td>
+          <td style="font-size:.75rem;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${escapeHTML(c.notes||'')}">${escapeHTML(c.notes||'—')}</td>
+          <td style="display:flex;gap:.3rem;">
+            <button class="btn-edit" onclick="openEditModal(${c.id})" title="Edit case">✏️</button>
+            <button onclick="deleteCase(${c.id})" style="background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.3);color:var(--accent);border-radius:4px;padding:.2rem .5rem;cursor:pointer;font-size:.7rem;" title="Delete case">✕</button>
+          </td>
+        </tr>`;
+  }).join('');
+
+  if (targetId) {
+    setTimeout(() => {
+      const el = document.getElementById(`case-row-${targetId}`);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+  }
 }
 
 function clearFilters() {
-  ['filterArea','filterSeverity','filterDateFrom','filterDateTo'].forEach(id=>{document.getElementById(id).value='';});
+  ['filterArea','filterSeverity','filterDateFrom','filterDateTo','filterSearch'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const clearBtn = document.getElementById('filterSearchClear');
+  if (clearBtn) clearBtn.style.display = 'none';
+  const badge = document.getElementById('filterResultCount');
+  if (badge) badge.classList.remove('show');
   renderTable(allCases);
+}
+
+// ── GLOBAL SEARCH ─────────────────────────────────────────────────────────────
+function handleGlobalSearch() {
+  const input = document.getElementById('globalSearchInput');
+  const query = input ? input.value.trim() : '';
+  const clearBtn = document.getElementById('globalSearchClear');
+  const dropdown = document.getElementById('searchDropdown');
+
+  if (!query) {
+    if (clearBtn) clearBtn.style.display = 'none';
+    if (dropdown) { dropdown.classList.remove('show'); dropdown.innerHTML = ''; }
+    return;
+  }
+
+  if (clearBtn) clearBtn.style.display = 'inline-block';
+  const qLower = query.toLowerCase();
+
+  const matches = (allCases || []).filter(c => {
+    return (c.patient_id && c.patient_id.toLowerCase().includes(qLower)) ||
+           (c.area && c.area.toLowerCase().includes(qLower)) ||
+           (c.notes && c.notes.toLowerCase().includes(qLower)) ||
+           (c.severity && c.severity.toLowerCase().includes(qLower)) ||
+           (c.age_group && c.age_group.toLowerCase().includes(qLower)) ||
+           (c.gender && c.gender.toLowerCase().includes(qLower));
+  });
+
+  renderGlobalSearchDropdown(matches, query);
+}
+
+function renderGlobalSearchDropdown(matches, query) {
+  const dropdown = document.getElementById('searchDropdown');
+  if (!dropdown) return;
+
+  if (!matches.length) {
+    dropdown.innerHTML = `
+      <div class="search-dropdown-header">
+        <span>PATIENT SEARCH</span>
+        <span>0 RESULTS</span>
+      </div>
+      <div class="search-empty">
+        <div style="font-size:1.5rem;margin-bottom:.4rem;opacity:.5;">🔍</div>
+        <div style="color:var(--text);font-weight:600;margin-bottom:.2rem;">No matching patient records</div>
+        <div style="font-size:.68rem;color:var(--muted);">Searched across Patient ID, Area, Notes, Demographics</div>
+      </div>
+    `;
+    dropdown.classList.add('show');
+    return;
+  }
+
+  const previewList = matches.slice(0, 6);
+  const itemsHTML = previewList.map(c => `
+    <div class="search-result-item" onclick="selectSearchResult(${c.id}, '${escapeHTML(c.patient_id)}')">
+      <div class="search-result-row1">
+        <span class="search-patient-id">${escapeHTML(c.patient_id)}</span>
+        <div style="display:flex;align-items:center;gap:.4rem;">
+          <span class="badge badge-${c.severity}">${c.severity}</span>
+          <span style="font-family:'Space Mono',monospace;font-size:.68rem;color:var(--muted);">${c.date}</span>
+          <button class="btn-edit" onclick="event.stopPropagation(); closeGlobalSearch(); openEditModal(${c.id});" title="Quick edit" style="padding:.1rem .35rem;font-size:.65rem;">✏️</button>
+        </div>
+      </div>
+      <div class="search-result-row2">
+        <span>📍 <b>${escapeHTML(c.area)}</b></span>
+        <span>·</span>
+        <span>${escapeHTML(c.gender || '—')} (${escapeHTML(c.age_group || '—')})</span>
+      </div>
+      ${c.notes ? `<div class="search-result-notes">📝 ${escapeHTML(c.notes)}</div>` : ''}
+    </div>
+  `).join('');
+
+  dropdown.innerHTML = `
+    <div class="search-dropdown-header">
+      <span>PATIENT SEARCH</span>
+      <span>${matches.length} MATCH${matches.length === 1 ? '' : 'ES'}</span>
+    </div>
+    <div class="search-dropdown-list">
+      ${itemsHTML}
+    </div>
+    <div class="search-dropdown-footer" onclick="viewAllSearchResults('${escapeHTML(query)}')">
+      View all ${matches.length} matching records in Records tab →
+    </div>
+  `;
+  dropdown.classList.add('show');
+}
+
+function selectSearchResult(caseId, patientId) {
+  closeGlobalSearch();
+  switchView('records');
+  const searchInput = document.getElementById('filterSearch');
+  if (searchInput) {
+    searchInput.value = patientId;
+    const clearBtn = document.getElementById('filterSearchClear');
+    if (clearBtn) clearBtn.style.display = 'inline-block';
+  }
+  window.pendingHighlightId = caseId;
+  loadTable(caseId);
+}
+
+function viewAllSearchResults(query) {
+  closeGlobalSearch();
+  switchView('records');
+  const searchInput = document.getElementById('filterSearch');
+  if (searchInput) {
+    searchInput.value = query;
+    const clearBtn = document.getElementById('filterSearchClear');
+    if (clearBtn) clearBtn.style.display = 'inline-block';
+  }
+  loadTable();
+}
+
+function closeGlobalSearch() {
+  const dropdown = document.getElementById('searchDropdown');
+  if (dropdown) dropdown.classList.remove('show');
+}
+
+function clearGlobalSearch() {
+  const input = document.getElementById('globalSearchInput');
+  if (input) input.value = '';
+  const clearBtn = document.getElementById('globalSearchClear');
+  if (clearBtn) clearBtn.style.display = 'none';
+  closeGlobalSearch();
 }
 
 // ── CRUD ──────────────────────────────────────────────────────────────────────
@@ -1104,14 +1546,31 @@ async function saveEditCase() {
   btn.innerHTML = '💾 Save Changes'; btn.disabled = false;
 }
 
-// Close modal on overlay click
+// Close modal or search on overlay/outside click
 document.addEventListener('click', (e) => {
   if (e.target.id === 'editModal') closeEditModal();
+  const searchContainer = document.getElementById('globalSearchContainer');
+  if (searchContainer && !searchContainer.contains(e.target)) {
+    closeGlobalSearch();
+  }
 });
 
-// Close modal on Escape key
+// Global keyboard shortcuts: / or Ctrl+K for search, Escape to close
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeEditModal();
+  const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+  const isInput = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select';
+
+  if ((e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) && !isInput) {
+    e.preventDefault();
+    const searchInput = document.getElementById('globalSearchInput');
+    if (searchInput) {
+      searchInput.focus();
+      searchInput.select();
+    }
+  } else if (e.key === 'Escape') {
+    closeGlobalSearch();
+    closeEditModal();
+  }
 });
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
