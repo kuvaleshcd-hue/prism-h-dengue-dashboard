@@ -193,6 +193,45 @@
   .view { display:none; }
   .view.active { display:block; }
 
+  /* EDIT MODAL */
+  .modal-overlay {
+    position:fixed; inset:0; background:rgba(5,10,14,.85);
+    backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+    z-index:1000; display:none; align-items:center; justify-content:center;
+    animation:fadeIn .2s ease;
+  }
+  .modal-overlay.show { display:flex; }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  .modal {
+    background:var(--surface); border:1px solid var(--border); border-radius:16px;
+    width:100%; max-width:560px; max-height:90vh; overflow-y:auto;
+    box-shadow:0 25px 60px rgba(0,0,0,.6), 0 0 60px rgba(0,212,255,.08);
+    animation:slideUp .25s ease;
+  }
+  @keyframes slideUp { from{transform:translateY(24px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .modal-header {
+    padding:1.25rem 1.5rem; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .modal-header .card-title { font-size:.85rem; }
+  .modal-close {
+    background:rgba(255,68,68,.1); border:1px solid rgba(255,68,68,.3); color:var(--accent);
+    border-radius:8px; width:32px; height:32px; display:flex; align-items:center;
+    justify-content:center; cursor:pointer; font-size:.9rem; transition:all .2s;
+  }
+  .modal-close:hover { background:rgba(255,68,68,.2); transform:scale(1.05); }
+  .modal-body { padding:1.5rem; }
+  .modal-footer {
+    padding:1rem 1.5rem; border-top:1px solid var(--border);
+    display:flex; gap:.75rem; justify-content:flex-end;
+  }
+  .btn-edit {
+    background:rgba(0,212,255,.1); border:1px solid rgba(0,212,255,.3);
+    color:var(--accent3); border-radius:4px; padding:.2rem .5rem;
+    cursor:pointer; font-size:.7rem; transition:all .2s;
+  }
+  .btn-edit:hover { background:rgba(0,212,255,.2); }
+
   ::-webkit-scrollbar { width:5px; height:5px; }
   ::-webkit-scrollbar-track { background:var(--bg); }
   ::-webkit-scrollbar-thumb { background:var(--border); border-radius:999px; }
@@ -412,7 +451,7 @@
             <thead>
               <tr>
                 <th>#</th><th>Date</th><th>Patient ID</th><th>Area</th>
-                <th>Severity</th><th>Age Group</th><th>Gender</th><th>Notes</th><th>Del</th>
+                <th>Severity</th><th>Age Group</th><th>Gender</th><th>Notes</th><th>Actions</th>
               </tr>
             </thead>
             <tbody id="caseTableBody">
@@ -451,6 +490,68 @@
     <div class="card" style="margin-top:1rem;">
       <div class="card-header"><span class="card-title">🌦 Weather vs Dengue Cases (Last 30 Days)</span></div>
       <div class="card-body"><div class="chart-wrap" style="height:300px;"><canvas id="weatherChart"></canvas></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="card-title">✏️ Edit Case <span id="editCaseIdLabel" style="color:var(--accent3);font-family:'Space Mono',monospace;font-size:.7rem;"></span></span>
+      <button class="modal-close" onclick="closeEditModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editCaseId">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Patient ID / Code</label>
+          <input class="form-input" id="ePatientId" placeholder="e.g. PT-2024-001">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date Reported</label>
+          <input class="form-input" id="eDate" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Area / Zone</label>
+          <select class="form-select" id="eArea">
+            <option value="">Select area...</option>
+            <option>Rajajinagar</option><option>Koramangala</option><option>Hebbal</option>
+            <option>Whitefield</option><option>Indiranagar</option><option>Jayanagar</option>
+            <option>Marathahalli</option><option>Yelahanka</option><option>Banashankari</option>
+            <option>HSR Layout</option><option>Pandavapura</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Severity</label>
+          <select class="form-select" id="eSeverity">
+            <option value="mild">Mild</option>
+            <option value="moderate">Moderate</option>
+            <option value="severe">Severe</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Age Group</label>
+          <select class="form-select" id="eAge">
+            <option>0-12 (Child)</option><option>13-25 (Youth)</option>
+            <option>26-45 (Adult)</option><option>46-60 (Middle-aged)</option><option>60+ (Senior)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select class="form-select" id="eGender">
+            <option>Male</option><option>Female</option><option>Other</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Notes (optional)</label>
+          <input class="form-input" id="eNotes" placeholder="Symptoms, hospital, remarks...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-primary" id="editSaveBtn" onclick="saveEditCase()">💾 Save Changes</button>
     </div>
   </div>
 </div>
@@ -841,7 +942,7 @@ function renderTable(cases) {
           <td style="font-size:.75rem;color:var(--muted);">${c.age_group||'—'}</td>
           <td style="font-size:.75rem;color:var(--muted);">${c.gender||'—'}</td>
           <td style="font-size:.75rem;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;">${c.notes||'—'}</td>
-          <td><button onclick="deleteCase(${c.id})" style="background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.3);color:var(--accent);border-radius:4px;padding:.2rem .5rem;cursor:pointer;font-size:.7rem;">✕</button></td>
+          <td style="display:flex;gap:.3rem;"><button class="btn-edit" onclick="openEditModal(${c.id})">✏️</button><button onclick="deleteCase(${c.id})" style="background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.3);color:var(--accent);border-radius:4px;padding:.2rem .5rem;cursor:pointer;font-size:.7rem;">✕</button></td>
         </tr>`).join('')
     : `<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:2rem;">No records found.</td></tr>`;
 }
@@ -932,6 +1033,65 @@ function switchView(name) {
   if (name==='dashboard') setTimeout(()=>map.invalidateSize(), 100);
   if (name==='records') loadTable();
 }
+
+// ── EDIT CASE ─────────────────────────────────────────────────────────────────
+function openEditModal(caseId) {
+  const c = allCases.find(r => r.id === caseId);
+  if (!c) { showToast('⚠ Case not found', true); return; }
+
+  document.getElementById('editCaseId').value = c.id;
+  document.getElementById('editCaseIdLabel').textContent = `#${c.id}`;
+  document.getElementById('ePatientId').value = c.patient_id || '';
+  document.getElementById('eDate').value = c.date || '';
+  document.getElementById('eArea').value = c.area || '';
+  document.getElementById('eSeverity').value = c.severity || 'mild';
+  document.getElementById('eAge').value = c.age_group || '0-12 (Child)';
+  document.getElementById('eGender').value = c.gender || 'Male';
+  document.getElementById('eNotes').value = c.notes || '';
+
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('show');
+}
+
+async function saveEditCase() {
+  const caseId = document.getElementById('editCaseId').value;
+  const area = document.getElementById('eArea').value;
+  const date = document.getElementById('eDate').value;
+  const severity = document.getElementById('eSeverity').value;
+  if (!area || !date) { showToast('⚠ Area and Date required', true); return; }
+
+  const btn = document.getElementById('editSaveBtn');
+  btn.innerHTML = '<span class="spinner"></span> Saving...'; btn.disabled = true;
+  try {
+    await apiFetch(`/cases/${caseId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        patient_id: document.getElementById('ePatientId').value,
+        date, area, severity,
+        age_group: document.getElementById('eAge').value,
+        gender: document.getElementById('eGender').value,
+        notes: document.getElementById('eNotes').value
+      })
+    });
+    showToast(`✓ Case #${caseId} updated`);
+    closeEditModal();
+    loadAll();
+  } catch(e) { showToast('Error updating case', true); }
+  btn.innerHTML = '💾 Save Changes'; btn.disabled = false;
+}
+
+// Close modal on overlay click
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'editModal') closeEditModal();
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeEditModal();
+});
 
 // ── TOAST ─────────────────────────────────────────────────────────────────────
 function showToast(msg, warn=false) {

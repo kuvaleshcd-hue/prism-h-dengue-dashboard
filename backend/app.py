@@ -112,6 +112,43 @@ def delete_case(case_id):
     conn.close()
     return jsonify({'message': 'Deleted'})
 
+# Update (edit) an existing case
+@app.route('/api/cases/<int:case_id>', methods=['PUT'])
+def update_case(case_id):
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'No data provided'}), 400
+
+    required = ['date', 'area', 'severity']
+    for field in required:
+        if not data.get(field):
+            return jsonify({'error': f'Missing field: {field}'}), 400
+
+    conn = get_db()
+    # Check if case exists
+    existing = conn.execute('SELECT id FROM cases WHERE id = ?', (case_id,)).fetchone()
+    if not existing:
+        conn.close()
+        return jsonify({'error': 'Case not found'}), 404
+
+    conn.execute('''
+        UPDATE cases
+        SET patient_id = ?, date = ?, area = ?, severity = ?, age_group = ?, gender = ?, notes = ?
+        WHERE id = ?
+    ''', (
+        data.get('patient_id', ''),
+        data['date'],
+        data['area'],
+        data['severity'],
+        data.get('age_group', ''),
+        data.get('gender', ''),
+        data.get('notes', ''),
+        case_id
+    ))
+    conn.commit()
+    conn.close()
+    return jsonify({'message': 'Case updated', 'id': case_id})
+
 # Summary stats
 @app.route('/api/stats', methods=['GET'])
 def get_stats():
