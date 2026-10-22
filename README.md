@@ -90,8 +90,10 @@ to populate the dashboard with demo Bengaluru data.
 |--------|----------|-------------|
 | GET | `/api/cases` | Get all cases (supports filters) |
 | POST | `/api/cases` | Add a single case |
+| PUT | `/api/cases/<id>` | Update/edit an existing case |
 | DELETE | `/api/cases/<id>` | Delete a case |
 | GET | `/api/stats` | Summary stats + hotspots + trend |
+| GET | `/api/report` | Generate & download PDF report |
 | POST | `/api/cases/bulk` | Bulk import (JSON array) |
 | POST | `/api/seed` | Seed sample data |
 
@@ -136,6 +138,8 @@ GET /api/cases?from=2024-01-01&to=2024-01-31
 - ✅ CSV export
 - ✅ Auto-refresh every 30 seconds
 - ✅ Weather Data Integration (rainfall/temp correlation chart)
+- ✅ Edit existing cases (modal with pre-filled form)
+- ✅ PDF Report Generation (summary stats, hotspots, risk, cases)
 
 ---
 

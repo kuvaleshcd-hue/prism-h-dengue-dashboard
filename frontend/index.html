@@ -255,6 +255,7 @@
     <button class="nav-tab" onclick="switchView('analytics')">Analytics</button>
   </div>
   <div class="header-right">
+    <button class="btn btn-outline btn-sm" onclick="downloadReport()" style="display:flex;align-items:center;gap:.4rem;">📄 PDF Report</button>
     <div class="live-badge"><div class="live-dot"></div> LIVE</div>
     <div id="clock" style="font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);"></div>
   </div>
@@ -1032,6 +1033,26 @@ function switchView(name) {
   if (name==='analytics') setTimeout(renderAnalyticsCharts, 100);
   if (name==='dashboard') setTimeout(()=>map.invalidateSize(), 100);
   if (name==='records') loadTable();
+}
+
+// ── PDF REPORT ───────────────────────────────────────────────────────────────
+function downloadReport() {
+  showToast('📄 Generating PDF report...');
+  fetch(API + '/report')
+    .then(res => {
+      if (!res.ok) throw new Error('Report generation failed');
+      return res.blob();
+    })
+    .then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PRISM-H_Report_${today().replace(/-/g,'')}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('✓ PDF report downloaded!');
+    })
+    .catch(e => showToast('⚠ Failed to generate report', true));
 }
 
 // ── EDIT CASE ─────────────────────────────────────────────────────────────────
