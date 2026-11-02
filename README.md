@@ -152,4 +152,4 @@ GET /api/cases/search?q=Whitefield
 > "This is a simplified public health surveillance system inspired by WHO's PRISM-H.
 > It enables real-time dengue case reporting, geospatial hotspot visualization using Leaflet.js,
 > trend analytics via Chart.js, and basic outbreak prediction using linear regression on a
-> 30-day rolling window. The backend is built with Flask and SQLite, following a RESTful API design."
+> 30-day rolling window. The backend is built with Flask and SQLite, following a RESTful API design."     
