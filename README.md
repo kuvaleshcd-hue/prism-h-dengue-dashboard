@@ -1,7 +1,7 @@
 # 🦟 PRISM-H Dengue Surveillance Dashboard
 
 A simplified public health surveillance system inspired by PRISM-H.
-Built with Flask (Python) + SQLite + Leaflet.js + Chart.js.
+Built with Flask (Python) + SQLite + Leaflet.js + Chart.js.   
 
 ---
 
